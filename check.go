@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -95,4 +96,47 @@ func firstPathComponent(rel string) string {
 // RunFilesCheck validates every file matching glob against one explicit
 // schema (no base merge, no discriminator lookup) — how additive checks
 // like the knowledge vault's code-task overlay fields are expressed without
-// this tool knowing what a "code task" is. Implemented here in Task 6.
+// this tool knowing what a "code task" is.
+func RunFilesCheck(glob, schemaPath string) (*Report, error) {
+	paths, err := filepath.Glob(glob)
+	if err != nil {
+		return nil, fmt.Errorf("--files %q: %w", glob, err)
+	}
+	sort.Strings(paths)
+
+	schema, err := CompileSchemaFile(schemaPath)
+	if err != nil {
+		return nil, err
+	}
+
+	report := &Report{Title: "overlay"}
+	for _, path := range paths {
+		report.Checked++
+		data, err := os.ReadFile(path)
+		if err != nil {
+			report.Errorf(path, "%v", err)
+			continue
+		}
+		raw, _, ok := splitFrontmatter(data)
+		if !ok {
+			report.Errorf(path, "no YAML frontmatter (file must start with ---)")
+			continue
+		}
+		fm, err := parseFrontmatter(raw)
+		if err != nil {
+			report.Errorf(path, "%v", err)
+			continue
+		}
+		instance, err := toInstance(fm)
+		if err != nil {
+			report.Errorf(path, "%v", err)
+			continue
+		}
+		if err := schema.Validate(instance); err != nil {
+			for _, issue := range flattenValidationError(err) {
+				report.Errorf(path, "%s: %s", issue.Location, issue.Message)
+			}
+		}
+	}
+	return report, nil
+}

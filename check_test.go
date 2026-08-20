@@ -43,3 +43,35 @@ func TestRunVaultCheckUnknownDiscriminatorField(t *testing.T) {
 		t.Fatalf("expected every file to error on a missing discriminator field, got %d/%d", len(report.Errors), report.Checked)
 	}
 }
+
+func TestRunFilesCheckOverlay(t *testing.T) {
+	report, err := RunFilesCheck("testdata/overlay/*.md", "testdata/overlay/_code-task-overlay.schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Checked != 2 {
+		t.Fatalf("expected 2 checked, got %d", report.Checked)
+	}
+	var badErrored bool
+	for _, f := range report.Errors {
+		if f.Path == "testdata/overlay/good-task.md" {
+			t.Fatalf("did not expect an error on good-task.md: %s", f.Message)
+		}
+		if f.Path == "testdata/overlay/bad-task.md" {
+			badErrored = true
+		}
+	}
+	if !badErrored {
+		t.Fatal("expected bad-task.md (bad task_id pattern, bad task_status) to error")
+	}
+}
+
+func TestRunFilesCheckNoMatches(t *testing.T) {
+	report, err := RunFilesCheck("testdata/overlay/no-such-*.md", "testdata/overlay/_code-task-overlay.schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Checked != 0 || len(report.Errors) != 0 {
+		t.Fatalf("expected an empty, passing report for zero matches, got %+v", report)
+	}
+}

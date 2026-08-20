@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["task_id", "task_status", "spec"],
+  "properties": {
+    "task_id": {"type": "string", "pattern": "^task-[0-9]{2,}$"},
+    "task_status": {"enum": ["pending", "in_progress", "blocked", "completed"]},
+    "depends_on": {"type": "array", "items": {"type": "string"}}
+  }
+}
