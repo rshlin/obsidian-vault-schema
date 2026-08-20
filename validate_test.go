@@ -29,6 +29,24 @@ func TestFlattenValidationErrorNil(t *testing.T) {
 	}
 }
 
+func TestFlattenValidationErrorDropsContainerEntries(t *testing.T) {
+	s := NewSchemaSet("testdata/schemas")
+	sch, err := s.Compile("reference")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sch.Validate(map[string]interface{}{
+		"type": "reference", "title": "x", "status": "not-a-real-status", "summary": "y",
+	})
+	issues := flattenValidationError(err)
+	if len(issues) != 1 {
+		t.Fatalf("expected exactly 1 leaf issue (the status enum failure), got %d: %#v", len(issues), issues)
+	}
+	if issues[0].Location != "/status" {
+		t.Fatalf("expected the single issue to be located at /status, got %q", issues[0].Location)
+	}
+}
+
 func TestResolvePointer(t *testing.T) {
 	instance := map[string]interface{}{
 		"status":  "draft",
