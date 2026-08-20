@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "type": {"const": "spec"},
+    "spec_status": {"enum": ["in_progress", "in_review", "merged", "abandoned"]},
+    "pr": {"type": ["string", "null"]}
+  },
+  "if": {
+    "properties": {"spec_status": {"enum": ["in_review", "merged"]}},
+    "required": ["spec_status"]
+  },
+  "then": {
+    "required": ["pr"],
+    "properties": {"pr": {"type": "string"}}
+  }
+}
