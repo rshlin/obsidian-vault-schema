@@ -13,6 +13,14 @@ import (
 // with a dot" is the one convention-free rule that still keeps it out of
 // version control and editor state).
 func walkMarkdown(root string) ([]string, error) {
+	return walkMarkdownExcluding(root, nil)
+}
+
+// walkMarkdownExcluding is walkMarkdown plus a set of directory names
+// (matched exactly against DirEntry.Name(), at any depth) to skip in addition
+// to the dot-prefix rule — how --exclude-dir keeps a vault's non-note content
+// (plugin sources, tooling directories) out of the walk entirely.
+func walkMarkdownExcluding(root string, excludeDirs map[string]bool) ([]string, error) {
 	var out []string
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -20,6 +28,9 @@ func walkMarkdown(root string) ([]string, error) {
 		}
 		if d.IsDir() {
 			if d.Name() != "." && strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
+			}
+			if excludeDirs[d.Name()] {
 				return filepath.SkipDir
 			}
 			return nil

@@ -4,7 +4,21 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
+
+// stringSliceFlag implements flag.Value to collect a repeatable flag (e.g.
+// --exclude-dir passed more than once) into a slice.
+type stringSliceFlag []string
+
+func (s *stringSliceFlag) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *stringSliceFlag) Set(v string) error {
+	*s = append(*s, v)
+	return nil
+}
 
 func main() {
 	os.Exit(run(os.Args[1:]))
@@ -21,6 +35,9 @@ discriminator field selects):
                             violations located at a placeholder value (e.g. "templates")
   --placeholder-pattern RE  regexp identifying a placeholder value
                             (default "\{\{.*?\}\}")
+  --exclude-dir NAME        directory name to skip at any depth (repeatable)
+  --exclude-file PATH       file path relative to the vault root to skip
+                            entirely (repeatable)
 
 Explicit-schema mode (validates a file glob against one schema, for additive
 checks a discriminator can't express):
@@ -41,6 +58,10 @@ func run(args []string) int {
 	discriminator := fs.String("discriminator", "type", "frontmatter field naming the schema to use")
 	relaxedDir := fs.String("relaxed", "", "top-level directory exempt from placeholder-located violations")
 	placeholderPattern := fs.String("placeholder-pattern", `\{\{.*?\}\}`, "regexp identifying a template placeholder value")
+	var excludeDirs stringSliceFlag
+	fs.Var(&excludeDirs, "exclude-dir", "directory name to skip at any depth (repeatable)")
+	var excludeFiles stringSliceFlag
+	fs.Var(&excludeFiles, "exclude-file", "file path relative to the vault root to skip entirely (repeatable)")
 	files := fs.String("files", "", "glob of files to validate (explicit-schema mode)")
 	schemaFile := fs.String("schema", "", "one schema file to validate --files against (explicit-schema mode)")
 	if err := fs.Parse(args[1:]); err != nil {
@@ -72,7 +93,7 @@ func run(args []string) int {
 			fmt.Fprintln(os.Stderr, "check: --vault and --schemas are both required together")
 			return 2
 		}
-		report, err := RunVaultCheck(*vault, *schemasDir, *discriminator, *relaxedDir, *placeholderPattern)
+		report, err := RunVaultCheck(*vault, *schemasDir, *discriminator, *relaxedDir, *placeholderPattern, excludeDirs, excludeFiles)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "check:", err)
 			return 2

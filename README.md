@@ -26,5 +26,8 @@ discriminator can't express:
 enum/pattern/type violations located at a value matching `--placeholder-pattern`
 (default `\{\{.*?\}\}`) — required-field presence is always checked in full.
 
+`--exclude-dir NAME` (repeatable) skips a directory by exact name at any depth in the vault.
+`--exclude-file PATH` (repeatable) skips one file by its exact path relative to the vault root.
+
 See the `knowledge` vault's `decisions/0009-adopt-json-schema-validation-via-standalone-linter.md`
 for why this exists as its own tool.

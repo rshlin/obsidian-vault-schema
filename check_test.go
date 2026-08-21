@@ -3,15 +3,16 @@ package main
 import "testing"
 
 func TestRunVaultCheckReportsGoodAndBad(t *testing.T) {
-	report, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "", `\{\{.*?\}\}`)
+	report, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "", `\{\{.*?\}\}`, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.Checked != 5 {
-		t.Fatalf("expected 5 checked, got %d", report.Checked)
+	if report.Checked != 7 {
+		t.Fatalf("expected 7 checked, got %d", report.Checked)
 	}
-	// bad-reference.md (bad status) + bad-spec-missing-pr.md (missing pr) +
-	// template-reference.md (bad status, not relaxed here) = at least 3 files with issues.
+	// bad-reference.md (bad status), bad-spec-missing-pr.md (missing pr),
+	// template-reference.md (bad status, not relaxed here), plugin/some-plugin.md
+	// (non-note frontmatter) and NOTES.md (no frontmatter at all) all have issues.
 	if len(report.Errors) == 0 {
 		t.Fatal("expected at least one error")
 	}
@@ -23,7 +24,7 @@ func TestRunVaultCheckReportsGoodAndBad(t *testing.T) {
 }
 
 func TestRunVaultCheckRelaxedSuppressesPlaceholderOnly(t *testing.T) {
-	report, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "templates", `\{\{.*?\}\}`)
+	report, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "templates", `\{\{.*?\}\}`, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,12 +36,70 @@ func TestRunVaultCheckRelaxedSuppressesPlaceholderOnly(t *testing.T) {
 }
 
 func TestRunVaultCheckUnknownDiscriminatorField(t *testing.T) {
-	report, err := RunVaultCheck("testdata/vault", "testdata/schemas", "nonexistent_field", "", `\{\{.*?\}\}`)
+	report, err := RunVaultCheck("testdata/vault", "testdata/schemas", "nonexistent_field", "", `\{\{.*?\}\}`, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(report.Errors) != report.Checked {
 		t.Fatalf("expected every file to error on a missing discriminator field, got %d/%d", len(report.Errors), report.Checked)
+	}
+}
+
+func TestRunVaultCheckExcludeDirSkipsMatchedDirEntirely(t *testing.T) {
+	before, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "", `\{\{.*?\}\}`, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var foundBefore bool
+	for _, f := range before.Errors {
+		if f.Path == "plugin/some-plugin.md" {
+			foundBefore = true
+		}
+	}
+	if !foundBefore {
+		t.Fatal("expected plugin/some-plugin.md to error without --exclude-dir")
+	}
+
+	after, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "", `\{\{.*?\}\}`, []string{"plugin"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range after.Errors {
+		if f.Path == "plugin/some-plugin.md" {
+			t.Fatal("expected plugin/some-plugin.md to be excluded by --exclude-dir")
+		}
+	}
+	if after.Checked != before.Checked-1 {
+		t.Fatalf("expected Checked to drop by exactly 1 when excluding plugin/, got %d vs %d", after.Checked, before.Checked)
+	}
+}
+
+func TestRunVaultCheckExcludeFileSkipsMatchedPathEntirely(t *testing.T) {
+	before, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "", `\{\{.*?\}\}`, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var foundBefore bool
+	for _, f := range before.Errors {
+		if f.Path == "NOTES.md" {
+			foundBefore = true
+		}
+	}
+	if !foundBefore {
+		t.Fatal("expected NOTES.md to error without --exclude-file")
+	}
+
+	after, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "", `\{\{.*?\}\}`, nil, []string{"NOTES.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range after.Errors {
+		if f.Path == "NOTES.md" {
+			t.Fatal("expected NOTES.md to be excluded by --exclude-file")
+		}
+	}
+	if after.Checked != before.Checked-1 {
+		t.Fatalf("expected Checked to drop by exactly 1 when excluding NOTES.md, got %d vs %d", after.Checked, before.Checked)
 	}
 }
 

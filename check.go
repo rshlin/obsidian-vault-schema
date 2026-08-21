@@ -13,13 +13,25 @@ import (
 // discriminator field selects. relaxedDir names a top-level directory (e.g.
 // "templates") whose files are exempt from enum/pattern/type violations
 // specifically located at a placeholder value — required-field presence is
-// always fully checked, everywhere.
-func RunVaultCheck(vaultDir, schemasDir, discriminator, relaxedDir, placeholderPattern string) (*Report, error) {
+// always fully checked, everywhere. excludeDirs names directories (matched
+// exactly by name, at any depth) never walked at all; excludeFiles names
+// paths relative to vaultDir never read or reported.
+func RunVaultCheck(vaultDir, schemasDir, discriminator, relaxedDir, placeholderPattern string, excludeDirs, excludeFiles []string) (*Report, error) {
 	placeholderRe, err := regexp.Compile(placeholderPattern)
 	if err != nil {
 		return nil, fmt.Errorf("--placeholder-pattern: %w", err)
 	}
-	paths, err := walkMarkdown(vaultDir)
+
+	excludeDirSet := make(map[string]bool, len(excludeDirs))
+	for _, d := range excludeDirs {
+		excludeDirSet[d] = true
+	}
+	excludeFileSet := make(map[string]bool, len(excludeFiles))
+	for _, f := range excludeFiles {
+		excludeFileSet[filepath.ToSlash(f)] = true
+	}
+
+	paths, err := walkMarkdownExcluding(vaultDir, excludeDirSet)
 	if err != nil {
 		return nil, err
 	}
@@ -30,6 +42,9 @@ func RunVaultCheck(vaultDir, schemasDir, discriminator, relaxedDir, placeholderP
 		rel, err := filepath.Rel(vaultDir, path)
 		if err != nil {
 			rel = path
+		}
+		if excludeFileSet[filepath.ToSlash(rel)] {
+			continue
 		}
 		checkOneNote(report, path, rel, schemas, discriminator, relaxedDir, placeholderRe)
 	}
