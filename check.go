@@ -94,7 +94,7 @@ func checkOneNote(report *Report, path, rel string, schemas *SchemaSet, discrimi
 			if relaxed && isPlaceholderAt(instance, issue.Location, placeholderRe) {
 				continue
 			}
-			report.Errorf(rel, "%s: %s", issue.Location, issue.Message)
+			report.Errorf(rel, "%s", issue.format())
 		}
 	}
 }
@@ -149,7 +149,7 @@ func RunFilesCheck(glob, schemaPath string) (*Report, error) {
 		}
 		if err := schema.Validate(instance); err != nil {
 			for _, issue := range flattenValidationError(err) {
-				report.Errorf(path, "%s: %s", issue.Location, issue.Message)
+				report.Errorf(path, "%s", issue.format())
 			}
 		}
 	}

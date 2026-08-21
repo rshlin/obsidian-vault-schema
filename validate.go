@@ -13,6 +13,16 @@ type validationIssue struct {
 	Message  string
 }
 
+// format renders a validationIssue for a report line: "location: message" when
+// the issue names a field, or just "message" when it's located at the root
+// (e.g. a "required" failure, which has no InstanceLocation of its own).
+func (i validationIssue) format() string {
+	if i.Location == "" {
+		return i.Message
+	}
+	return i.Location + ": " + i.Message
+}
+
 // flattenValidationError turns a *jsonschema.ValidationError into one issue
 // per leaf failure. BasicOutput's first entry is always a root summary line
 // with an empty KeywordLocation ("doesn't validate with ...") — dropped here

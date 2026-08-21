@@ -1,18 +1,22 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestRunVaultCheckReportsGoodAndBad(t *testing.T) {
 	report, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "", `\{\{.*?\}\}`, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.Checked != 7 {
-		t.Fatalf("expected 7 checked, got %d", report.Checked)
+	if report.Checked != 8 {
+		t.Fatalf("expected 8 checked, got %d", report.Checked)
 	}
 	// bad-reference.md (bad status), bad-spec-missing-pr.md (missing pr),
-	// template-reference.md (bad status, not relaxed here), plugin/some-plugin.md
-	// (non-note frontmatter) and NOTES.md (no frontmatter at all) all have issues.
+	// template-reference.md (bad status, not relaxed here), template-missing-summary.md
+	// (missing summary), plugin/some-plugin.md (non-note frontmatter) and NOTES.md (no
+	// frontmatter at all) all have issues.
 	if len(report.Errors) == 0 {
 		t.Fatal("expected at least one error")
 	}
@@ -32,6 +36,31 @@ func TestRunVaultCheckRelaxedSuppressesPlaceholderOnly(t *testing.T) {
 		if f.Path == "templates/template-reference.md" {
 			t.Fatalf("relaxed mode should have suppressed the placeholder status violation, got: %s", f.Message)
 		}
+	}
+}
+
+func TestRunVaultCheckRelaxedDoesNotSuppressMissingRequired(t *testing.T) {
+	report, err := RunVaultCheck("testdata/vault", "testdata/schemas", "type", "templates", `\{\{.*?\}\}`, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var foundMissingSummary, foundPlaceholder bool
+	for _, f := range report.Errors {
+		if f.Path == "templates/template-missing-summary.md" {
+			foundMissingSummary = true
+			if strings.HasPrefix(f.Message, ": ") {
+				t.Fatalf("expected no stray leading colon on a root-located issue, got %q", f.Message)
+			}
+		}
+		if f.Path == "templates/template-reference.md" {
+			foundPlaceholder = true
+		}
+	}
+	if !foundMissingSummary {
+		t.Fatal("expected relaxed mode to still report the missing summary field — required-field presence is never suppressed, even inside a relaxed directory")
+	}
+	if foundPlaceholder {
+		t.Fatal("expected relaxed mode to still suppress the placeholder status violation on template-reference.md")
 	}
 }
 

@@ -74,6 +74,18 @@ func TestResolvePointer(t *testing.T) {
 	}
 }
 
+func TestValidationIssueFormat(t *testing.T) {
+	root := validationIssue{Location: "", Message: "missing properties: 'title', 'summary'"}
+	if got := root.format(); got != "missing properties: 'title', 'summary'" {
+		t.Fatalf("expected a root-located issue to format without a location prefix, got %q", got)
+	}
+
+	field := validationIssue{Location: "/status", Message: "value must be one of 'draft', 'review', 'canonical'"}
+	if got := field.format(); got != "/status: value must be one of 'draft', 'review', 'canonical'" {
+		t.Fatalf("expected a field-located issue to include its location, got %q", got)
+	}
+}
+
 func TestIsPlaceholderAt(t *testing.T) {
 	instance := map[string]interface{}{"status": "{{status}}", "title": "Real Title"}
 	re := regexp.MustCompile(`\{\{.*?\}\}`)

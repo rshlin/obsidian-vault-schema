@@ -7,8 +7,8 @@ func TestWalkMarkdownFindsAllNotes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(paths) != 7 {
-		t.Fatalf("expected 7 notes, got %d: %v", len(paths), paths)
+	if len(paths) != 8 {
+		t.Fatalf("expected 8 notes, got %d: %v", len(paths), paths)
 	}
 }
 
