@@ -30,7 +30,7 @@ func walkMarkdownExcluding(root string, excludeDirs map[string]bool) ([]string, 
 			if d.Name() != "." && strings.HasPrefix(d.Name(), ".") {
 				return filepath.SkipDir
 			}
-			if excludeDirs[d.Name()] {
+			if path != root && excludeDirs[d.Name()] {
 				return filepath.SkipDir
 			}
 			return nil
