@@ -62,6 +62,99 @@ var (
 	plainNull = regexp.MustCompile(`^(?:~|null|Null|NULL|)$`)
 )
 
+// nonJSON stands in for a value PyYAML constructs happily but JSON cannot
+// hold: a `!!timestamp` becomes a datetime.date there, a `!!binary` becomes
+// bytes, a `!!set` becomes a set. None of them is a JSON type, so no JSON
+// Schema keyword has defined behaviour against one, and the two validators
+// cannot be made to agree about it in general — the only convergent answer is
+// for both to refuse it. Carrying the value this far rather than erroring at
+// the parse site is what lets the report name the field it is in.
+//
+// PyName is the Python type name the primary validator would print for it, so
+// both implementations describe the same value with the same word.
+type nonJSON struct {
+	PyName string
+}
+
+// taggedValue constructs an explicitly tagged scalar the way PyYAML's
+// SafeConstructor does.
+//
+// This exists because an explicit tag is the one place a plain-scalar resolver
+// is not enough: `!!int "42"` is quoted (so it never reaches resolvePlain) yet
+// PyYAML constructs an int from it, and `!!str 42` is plain (so it would
+// otherwise resolve to an int) yet PyYAML keeps it text. Reading only the
+// node's style gets both backwards. yaml.v3 fills in an *implicit* tag for
+// every scalar too, which is its own YAML-1.2 resolution and must be ignored —
+// only a tag the author actually wrote (yaml.TaggedStyle) is honoured here.
+//
+// Tags SafeConstructor does not define raise there, so they error here.
+func taggedValue(tag, raw string) (interface{}, error) {
+	switch tag {
+	case "!!str":
+		return raw, nil
+	case "!!bool":
+		if !plainBool.MatchString(raw) {
+			return nil, constructorError("bool", raw)
+		}
+		return constructBool(raw), nil
+	case "!!int":
+		if !plainInt.MatchString(raw) {
+			return nil, constructorError("int", raw)
+		}
+		return constructInt(raw), nil
+	case "!!float":
+		// PyYAML's float constructor accepts anything its int form matches too
+		// (`!!float 1` is 1.0), so both patterns are tried.
+		if plainFloat.MatchString(raw) {
+			return constructFloat(raw), nil
+		}
+		if plainInt.MatchString(raw) {
+			return float64(toFloat(constructInt(raw))), nil
+		}
+		return nil, constructorError("float", raw)
+	case "!!null":
+		return nil, nil
+	case "!!timestamp":
+		// PyYAML builds a datetime.date or datetime.datetime here. Neither is
+		// JSON, and which one it builds depends on whether a time is present.
+		if strings.ContainsAny(raw, "Tt") || strings.Contains(raw, ":") {
+			return nonJSON{PyName: "datetime"}, nil
+		}
+		return nonJSON{PyName: "date"}, nil
+	case "!!binary":
+		return nonJSON{PyName: "bytes"}, nil
+	}
+	return nil, unknownTagError(tag)
+}
+
+func toFloat(v interface{}) float64 {
+	switch x := v.(type) {
+	case int64:
+		return float64(x)
+	case float64:
+		return x
+	}
+	return 0
+}
+
+// constructorError mirrors the message PyYAML raises when a value carries a
+// tag whose constructor cannot build it.
+func constructorError(kind, raw string) error {
+	return fmt.Errorf("frontmatter is not valid YAML: could not determine a %s "+
+		"from %q", kind, raw)
+}
+
+// unknownTagError mirrors PyYAML's ConstructorError for a tag SafeConstructor
+// defines nothing for, including its full-URI spelling of the standard tags.
+func unknownTagError(tag string) error {
+	name := tag
+	if strings.HasPrefix(tag, "!!") {
+		name = "tag:yaml.org,2002:" + tag[2:]
+	}
+	return fmt.Errorf("frontmatter is not valid YAML: could not determine a "+
+		"constructor for the tag '%s'", name)
+}
+
 // resolvePlain returns the value PyYAML's SafeLoader would construct for a
 // plain scalar. The error case mirrors a PyYAML ConstructorError, which the
 // Python validator surfaces as "frontmatter is not valid YAML".

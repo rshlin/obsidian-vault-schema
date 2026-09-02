@@ -3,7 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
+	"sort"
+	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -89,6 +94,12 @@ func nodeValue(n *yaml.Node, depth int) (interface{}, error) {
 		return nodeValue(n.Alias, depth+1)
 
 	case yaml.ScalarNode:
+		// An explicit tag wins over both the style and the plain resolver:
+		// PyYAML's constructor is chosen by tag, so `!!int "42"` is an int
+		// despite the quotes and `!!str 42` is text despite looking numeric.
+		if explicitlyTagged(n) {
+			return taggedValue(n.Tag, n.Value)
+		}
 		// Style 0 is a plain scalar. Anything quoted, literal or folded is a
 		// string in both implementations and is never re-resolved.
 		if n.Style != 0 {
@@ -97,6 +108,17 @@ func nodeValue(n *yaml.Node, depth int) (interface{}, error) {
 		return resolvePlain(n.Value)
 
 	case yaml.SequenceNode:
+		if explicitlyTagged(n) {
+			switch n.Tag {
+			case "!!seq":
+			case "!!omap", "!!pairs":
+				// PyYAML yields a list of (key, value) tuples, which its
+				// validator then normalises into two-element lists.
+				return pairsValue(n, depth)
+			default:
+				return nil, unknownTagError(n.Tag)
+			}
+		}
 		out := make([]interface{}, 0, len(n.Content))
 		for _, item := range n.Content {
 			v, err := nodeValue(item, depth+1)
@@ -108,9 +130,53 @@ func nodeValue(n *yaml.Node, depth int) (interface{}, error) {
 		return out, nil
 
 	case yaml.MappingNode:
+		if explicitlyTagged(n) {
+			switch n.Tag {
+			case "!!map":
+			case "!!set":
+				// PyYAML builds a Python set, which is not a JSON value.
+				return nonJSON{PyName: "set"}, nil
+			default:
+				return nil, unknownTagError(n.Tag)
+			}
+		}
 		return mappingValue(n, depth)
 	}
 	return nil, fmt.Errorf("frontmatter is not valid YAML: unsupported node")
+}
+
+// explicitlyTagged reports whether the author wrote a tag on this node.
+// yaml.v3 also fills in Tag for untagged nodes with the result of its own
+// YAML-1.2 resolution — "!!int" for a bare 42, "!!timestamp" for a bare date —
+// and honouring those would reintroduce exactly the resolver drift scalar.go
+// exists to remove. Only yaml.TaggedStyle distinguishes the two.
+func explicitlyTagged(n *yaml.Node) bool {
+	return n.Style&yaml.TaggedStyle != 0 && n.Tag != ""
+}
+
+// pairsValue builds the shape PyYAML gives an "!!omap" or "!!pairs": a list of
+// (key, value) pairs, which the Python validator's normalise() then flattens
+// into two-element lists. Producing a list of one-key maps instead — which is
+// what an untagged read of the same YAML gives — would make the two validators
+// see different shapes for the same note.
+func pairsValue(n *yaml.Node, depth int) (interface{}, error) {
+	out := make([]interface{}, 0, len(n.Content))
+	for _, item := range n.Content {
+		if item.Kind != yaml.MappingNode || len(item.Content) != 2 {
+			return nil, fmt.Errorf("frontmatter is not valid YAML: expected a "+
+				"single mapping of key to value in %s", n.Tag)
+		}
+		k, err := nodeValue(item.Content[0], depth+1)
+		if err != nil {
+			return nil, err
+		}
+		v, err := nodeValue(item.Content[1], depth+1)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, []interface{}{k, v})
+	}
+	return out, nil
 }
 
 func mappingValue(n *yaml.Node, depth int) (interface{}, error) {
@@ -210,12 +276,84 @@ func jsonTypeName(v interface{}) string {
 	return fmt.Sprintf("%T", v)
 }
 
+// notJSON walks a parsed frontmatter value and returns a message for the first
+// value JSON cannot hold, located by JSON Pointer, or "" when every value is
+// JSON data.
+//
+// The schemas are JSON Schema, so a value outside the JSON data model has no
+// defined behaviour under any keyword — and two independent implementations
+// will invent different behaviour for it. NaN is the clearest case: Python's
+// json.dumps writes a bare `NaN` (which is not JSON, and which no other reader
+// accepts) while Go's refuses outright, so the same note passed one validator
+// and failed the other. Both now refuse it, in the same words.
+//
+// The message is deliberately phrased in the primary validator's vocabulary —
+// Python type names — so the two reports describe one value the same way.
+func notJSON(v interface{}, pointer string) string {
+	at := func(what string) string {
+		if pointer == "" {
+			return what
+		}
+		return pointer + ": " + what
+	}
+	switch x := v.(type) {
+	case nil, bool, string, int64:
+		return ""
+	case float64:
+		if math.IsNaN(x) {
+			return at("nan is not a JSON number — a schema cannot judge a value JSON cannot hold")
+		}
+		if math.IsInf(x, 0) {
+			name := "inf"
+			if math.IsInf(x, -1) {
+				name = "-inf"
+			}
+			return at(name + " is not a JSON number — a schema cannot judge a value JSON cannot hold")
+		}
+		return ""
+	case nonJSON:
+		return at("a " + x.PyName + " is not JSON data — a schema cannot judge a value JSON cannot hold")
+	case []interface{}:
+		for i, item := range x {
+			if msg := notJSON(item, pointer+"/"+strconv.Itoa(i)); msg != "" {
+				return msg
+			}
+		}
+		return ""
+	case map[string]interface{}:
+		// Sorted, so the same note reports the same field every run.
+		keys := make([]string, 0, len(x))
+		for k := range x {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			if msg := notJSON(x[k], pointer+"/"+escapePointer(k)); msg != "" {
+				return msg
+			}
+		}
+		return ""
+	}
+	return at(fmt.Sprintf("a %T is not JSON data — a schema cannot judge a value JSON cannot hold", v))
+}
+
+// escapePointer encodes a mapping key for a JSON Pointer segment (RFC 6901).
+func escapePointer(k string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(k, "~", "~0"), "/", "~1")
+}
+
 // toInstance converts a parsed frontmatter map into exactly the
 // representation santhosh-tekuri/jsonschema expects: types produced by
 // encoding/json (float64 for numbers, map[string]interface{},
 // []interface{}, string, bool, nil). The json round-trip is what guarantees
 // that, rather than relying on the node walk to happen to already match.
+//
+// Anything JSON cannot hold is refused first, by notJSON, so the report names
+// the field rather than surfacing a marshaller's opinion of the whole document.
 func toInstance(m map[string]interface{}) (interface{}, error) {
+	if msg := notJSON(m, ""); msg != "" {
+		return nil, errors.New(msg)
+	}
 	b, err := json.Marshal(m)
 	if err != nil {
 		return nil, fmt.Errorf("frontmatter is not JSON-representable: %w", err)

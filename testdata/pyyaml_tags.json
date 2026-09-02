@@ -1,0 +1,217 @@
+[
+ {
+  "token": "!!str 42",
+  "kind": "str",
+  "value": "42"
+ },
+ {
+  "token": "!!str yes",
+  "kind": "str",
+  "value": "yes"
+ },
+ {
+  "token": "!!str no",
+  "kind": "str",
+  "value": "no"
+ },
+ {
+  "token": "!!str null",
+  "kind": "str",
+  "value": "null"
+ },
+ {
+  "token": "!!str 2026-01-01",
+  "kind": "str",
+  "value": "2026-01-01"
+ },
+ {
+  "token": "!!str ''",
+  "kind": "str",
+  "value": ""
+ },
+ {
+  "token": "!!str \"x\"",
+  "kind": "str",
+  "value": "x"
+ },
+ {
+  "token": "!!str 1.5",
+  "kind": "str",
+  "value": "1.5"
+ },
+ {
+  "token": "!!str .nan",
+  "kind": "str",
+  "value": ".nan"
+ },
+ {
+  "token": "!!str ~",
+  "kind": "str",
+  "value": "~"
+ },
+ {
+  "token": "!!int \"42\"",
+  "kind": "int",
+  "value": "42"
+ },
+ {
+  "token": "!!int 42",
+  "kind": "int",
+  "value": "42"
+ },
+ {
+  "token": "!!int -7",
+  "kind": "int",
+  "value": "-7"
+ },
+ {
+  "token": "!!int 0x1f",
+  "kind": "int",
+  "value": "31"
+ },
+ {
+  "token": "!!int 010",
+  "kind": "int",
+  "value": "8"
+ },
+ {
+  "token": "!!bool \"yes\"",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "!!bool yes",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "!!bool no",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "!!bool TRUE",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "!!bool off",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "!!float 1",
+  "kind": "float",
+  "value": "1.0"
+ },
+ {
+  "token": "!!float \"1.5\"",
+  "kind": "float",
+  "value": "1.5"
+ },
+ {
+  "token": "!!float 1.5",
+  "kind": "float",
+  "value": "1.5"
+ },
+ {
+  "token": "!!float .inf",
+  "kind": "float",
+  "value": "inf"
+ },
+ {
+  "token": "!!float .nan",
+  "kind": "float",
+  "value": "nan"
+ },
+ {
+  "token": "!!null",
+  "kind": "null",
+  "value": "None"
+ },
+ {
+  "token": "!!null ~",
+  "kind": "null",
+  "value": "None"
+ },
+ {
+  "token": "!!null anything",
+  "kind": "null",
+  "value": "None"
+ },
+ {
+  "token": "!!timestamp 2026-01-01",
+  "kind": "nonjson",
+  "value": "date"
+ },
+ {
+  "token": "!!timestamp 2026-01-01T10:30:00Z",
+  "kind": "nonjson",
+  "value": "datetime"
+ },
+ {
+  "token": "!!timestamp 2026-01-01 10:30:00",
+  "kind": "nonjson",
+  "value": "datetime"
+ },
+ {
+  "token": "!!binary aGVsbG8=",
+  "kind": "nonjson",
+  "value": "bytes"
+ },
+ {
+  "token": "!!set {a, b}",
+  "kind": "nonjson",
+  "value": "set"
+ },
+ {
+  "token": "!!map {a: 1}",
+  "kind": "json",
+  "value": "{\"a\":1}"
+ },
+ {
+  "token": "!!seq [1, 2]",
+  "kind": "json",
+  "value": "[1,2]"
+ },
+ {
+  "token": "!!omap [{a: 1}]",
+  "kind": "json",
+  "value": "[[\"a\",1]]"
+ },
+ {
+  "token": "!!pairs [{a: 1}]",
+  "kind": "json",
+  "value": "[[\"a\",1]]"
+ },
+ {
+  "token": "!!nosuchtag foo",
+  "kind": "error",
+  "value": ""
+ },
+ {
+  "token": "!Custom foo",
+  "kind": "error",
+  "value": ""
+ },
+ {
+  "token": "!!python/object foo",
+  "kind": "error",
+  "value": ""
+ },
+ {
+  "token": "!!bool notabool",
+  "kind": "error",
+  "value": ""
+ },
+ {
+  "token": "!!int notanint",
+  "kind": "error",
+  "value": ""
+ },
+ {
+  "token": "!!float notafloat",
+  "kind": "error",
+  "value": ""
+ }
+]

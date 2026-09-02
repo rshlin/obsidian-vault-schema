@@ -47,6 +47,27 @@ replays every one of them: if it fails, the two validators now disagree about a 
 | a key written twice | an error — one of the two values is being discarded |
 | a UTF-8 BOM before `---` | stripped; the note has frontmatter |
 | a recursive alias (`a: &x {b: *x}`) | an error, at a bounded depth, rather than a hang |
+| `title: !!str 42` | the string `42` — an explicit tag beats the resolver |
+| `title: !!int "42"` | the integer `42` — an explicit tag beats the quotes, too |
+| `x: !!nosuchtag v`, `!Custom v` | an error; `SafeConstructor` defines no constructor for it |
+| `score: .nan`, `.inf`, `-.inf` | an error naming the field — not a JSON number |
+| `created: !!timestamp 2026-01-01` | an error naming the field — a date is not JSON data |
+| `x: !!binary aGk=`, `!!set {a, b}` | an error naming the field — bytes and sets are not JSON data |
+
+**Explicit tags are the case a style-only reader gets exactly backwards.** PyYAML picks a
+constructor by *tag*, not by quoting: `!!int "42"` is an integer despite the quotes and `!!str 42`
+is text despite looking numeric. `yaml.v3` also fills in an implicit tag for every scalar from its
+own YAML-1.2 resolution, which must be ignored — only a tag the author actually wrote
+(`yaml.TaggedStyle`) is honoured. `testdata/pyyaml_tags.json` records what the vault's loader built
+for each one and `TestTaggedScalarsMatchPyYAML` replays them.
+
+**Frontmatter has to be JSON data.** The schemas are JSON Schema, so a value outside the JSON data
+model has no defined behaviour under any keyword — and two implementations will invent *different*
+behaviour for it rather than agree. `NaN` is the clearest case: Python's `json.dumps` writes a bare
+`NaN`, which is not JSON and which no other reader accepts, while Go's marshaller refuses outright,
+so the same note passed one validator and failed the other. Both now refuse it, in the same words
+and naming the field. The same rule covers the tags whose constructors build a non-JSON Python
+object: `!!timestamp` (a date), `!!binary` (bytes), `!!set` (a set).
 
 **Dates are the case worth spelling out.** `yaml.v3` parses both `2026-01-31` and `2026-1-5` into
 `time.Time`, so re-rendering them as `YYYY-MM-DD` silently repairs the second one — it would pass
