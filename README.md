@@ -23,6 +23,40 @@ Python side does not implement.
 If the two ever disagree, the Python one is right by definition — it is the specification, and a
 disagreement is a bug in this tool.
 
+## Agreeing with the Python validator
+
+Two independent implementations of the same schema drift, and a vault that passes or fails
+depending on which checker happened to be installed is worse than having no second checker: the
+disagreement is invisible until it bites. So the parity is deliberate and tested, not hoped for.
+
+The drift is almost never in the JSON Schema keywords — it is in **the YAML layer underneath
+them**, because PyYAML implements YAML 1.1 and `gopkg.in/yaml.v3` implements a YAML-1.2-flavoured
+core. Left alone the two disagree about what a bare word means. So plain scalars are resolved here
+the way PyYAML's `SafeLoader` resolves them ([`scalar.go`](scalar.go)), and `testdata/pyyaml_scalars.json`
+records what the vault's own loader produced for a sweep of tokens. `TestPlainScalarsMatchPyYAML`
+replays every one of them: if it fails, the two validators now disagree about a value.
+
+| | Both now say |
+|---|---|
+| `title: yes`, `no`, `on`, `off` | boolean (YAML 1.1), so a `type: string` field rejects it |
+| `title: 1e3`, `0o17` | string — PyYAML resolves neither as a number |
+| `title: 1:30` | integer `90` — YAML 1.1 sexagesimal |
+| `created: 2026-01-31` | the string `2026-01-31`, quoted or not |
+| `created: 2026-1-5` | the string `2026-1-5` — **not** silently zero-padded, so the ISO pattern rejects it |
+| `created: 2026-01-31T10:30:00Z` | that whole string, so a date-only pattern rejects it |
+| a key written twice | an error — one of the two values is being discarded |
+| a UTF-8 BOM before `---` | stripped; the note has frontmatter |
+| a recursive alias (`a: &x {b: *x}`) | an error, at a bounded depth, rather than a hang |
+
+**Dates are the case worth spelling out.** `yaml.v3` parses both `2026-01-31` and `2026-1-5` into
+`time.Time`, so re-rendering them as `YYYY-MM-DD` silently repairs the second one — it would pass
+here and fail against the Python side, which leaves it a string. Nothing here converts a timestamp:
+a date is judged as the characters its author typed. The vault's loader has PyYAML's timestamp
+resolver removed for the same reason.
+
+The remaining known difference is cosmetic: an integer larger than 2^63 becomes a float here and
+stays exact in Python. Both are JSON *numbers*, so every keyword reaches the same verdict.
+
 ## Install
 
     make install    # -> ~/.local/bin/obsidian-vault-lint

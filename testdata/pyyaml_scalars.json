@@ -1,0 +1,517 @@
+[
+ {
+  "token": "yes",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "Yes",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "YES",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "no",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "No",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "NO",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "on",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "On",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "ON",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "off",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "Off",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "OFF",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "true",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "True",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "TRUE",
+  "kind": "bool",
+  "value": "True"
+ },
+ {
+  "token": "false",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "False",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "FALSE",
+  "kind": "bool",
+  "value": "False"
+ },
+ {
+  "token": "y",
+  "kind": "str",
+  "value": "y"
+ },
+ {
+  "token": "n",
+  "kind": "str",
+  "value": "n"
+ },
+ {
+  "token": "Y",
+  "kind": "str",
+  "value": "Y"
+ },
+ {
+  "token": "N",
+  "kind": "str",
+  "value": "N"
+ },
+ {
+  "token": "~",
+  "kind": "null",
+  "value": "None"
+ },
+ {
+  "token": "null",
+  "kind": "null",
+  "value": "None"
+ },
+ {
+  "token": "Null",
+  "kind": "null",
+  "value": "None"
+ },
+ {
+  "token": "NULL",
+  "kind": "null",
+  "value": "None"
+ },
+ {
+  "token": "NuLL",
+  "kind": "str",
+  "value": "NuLL"
+ },
+ {
+  "token": "0",
+  "kind": "int",
+  "value": "0"
+ },
+ {
+  "token": "-0",
+  "kind": "int",
+  "value": "0"
+ },
+ {
+  "token": "+0",
+  "kind": "int",
+  "value": "0"
+ },
+ {
+  "token": "1",
+  "kind": "int",
+  "value": "1"
+ },
+ {
+  "token": "-1",
+  "kind": "int",
+  "value": "-1"
+ },
+ {
+  "token": "+1",
+  "kind": "int",
+  "value": "1"
+ },
+ {
+  "token": "007",
+  "kind": "int",
+  "value": "7"
+ },
+ {
+  "token": "017",
+  "kind": "int",
+  "value": "15"
+ },
+ {
+  "token": "0o17",
+  "kind": "str",
+  "value": "0o17"
+ },
+ {
+  "token": "0b101",
+  "kind": "int",
+  "value": "5"
+ },
+ {
+  "token": "-0b101",
+  "kind": "int",
+  "value": "-5"
+ },
+ {
+  "token": "0x1f",
+  "kind": "int",
+  "value": "31"
+ },
+ {
+  "token": "0xFF",
+  "kind": "int",
+  "value": "255"
+ },
+ {
+  "token": "1_000",
+  "kind": "int",
+  "value": "1000"
+ },
+ {
+  "token": "1_0_0",
+  "kind": "int",
+  "value": "100"
+ },
+ {
+  "token": "1:30",
+  "kind": "int",
+  "value": "90"
+ },
+ {
+  "token": "1:00:00",
+  "kind": "int",
+  "value": "3600"
+ },
+ {
+  "token": "-1:30",
+  "kind": "int",
+  "value": "-90"
+ },
+ {
+  "token": "12345678901234567890",
+  "kind": "int",
+  "value": "12345678901234567890"
+ },
+ {
+  "token": "0.0",
+  "kind": "float",
+  "value": "0.0"
+ },
+ {
+  "token": "1.0",
+  "kind": "float",
+  "value": "1.0"
+ },
+ {
+  "token": "-1.0",
+  "kind": "float",
+  "value": "-1.0"
+ },
+ {
+  "token": ".5",
+  "kind": "float",
+  "value": "0.5"
+ },
+ {
+  "token": "-.5",
+  "kind": "str",
+  "value": "-.5"
+ },
+ {
+  "token": "1.",
+  "kind": "float",
+  "value": "1.0"
+ },
+ {
+  "token": "1.5e+3",
+  "kind": "float",
+  "value": "1500.0"
+ },
+ {
+  "token": "1.5e-3",
+  "kind": "float",
+  "value": "0.0015"
+ },
+ {
+  "token": "1.5e3",
+  "kind": "str",
+  "value": "1.5e3"
+ },
+ {
+  "token": "1e3",
+  "kind": "str",
+  "value": "1e3"
+ },
+ {
+  "token": "1E3",
+  "kind": "str",
+  "value": "1E3"
+ },
+ {
+  "token": ".inf",
+  "kind": "float",
+  "value": "inf"
+ },
+ {
+  "token": "-.inf",
+  "kind": "float",
+  "value": "-inf"
+ },
+ {
+  "token": "+.inf",
+  "kind": "float",
+  "value": "inf"
+ },
+ {
+  "token": ".Inf",
+  "kind": "float",
+  "value": "inf"
+ },
+ {
+  "token": ".INF",
+  "kind": "float",
+  "value": "inf"
+ },
+ {
+  "token": ".nan",
+  "kind": "float",
+  "value": "nan"
+ },
+ {
+  "token": ".NaN",
+  "kind": "float",
+  "value": "nan"
+ },
+ {
+  "token": ".NAN",
+  "kind": "float",
+  "value": "nan"
+ },
+ {
+  "token": "1:30.5",
+  "kind": "float",
+  "value": "90.5"
+ },
+ {
+  "token": "=",
+  "kind": "error",
+  "value": ""
+ },
+ {
+  "token": "==",
+  "kind": "str",
+  "value": "=="
+ },
+ {
+  "token": "2026-01-31",
+  "kind": "str",
+  "value": "2026-01-31"
+ },
+ {
+  "token": "2026-1-5",
+  "kind": "str",
+  "value": "2026-1-5"
+ },
+ {
+  "token": "2026-01-5",
+  "kind": "str",
+  "value": "2026-01-5"
+ },
+ {
+  "token": "2026-1-05",
+  "kind": "str",
+  "value": "2026-1-05"
+ },
+ {
+  "token": "26-01-31",
+  "kind": "str",
+  "value": "26-01-31"
+ },
+ {
+  "token": "2026-01-31T10:30:00Z",
+  "kind": "str",
+  "value": "2026-01-31T10:30:00Z"
+ },
+ {
+  "token": "2026-01-31T10:30:00-08:00",
+  "kind": "str",
+  "value": "2026-01-31T10:30:00-08:00"
+ },
+ {
+  "token": "2026-01-31 10:30:00",
+  "kind": "str",
+  "value": "2026-01-31 10:30:00"
+ },
+ {
+  "token": "2026-1-5 10:30:00",
+  "kind": "str",
+  "value": "2026-1-5 10:30:00"
+ },
+ {
+  "token": "2026-13-45",
+  "kind": "str",
+  "value": "2026-13-45"
+ },
+ {
+  "token": "2026-02-30",
+  "kind": "str",
+  "value": "2026-02-30"
+ },
+ {
+  "token": "2026-01",
+  "kind": "str",
+  "value": "2026-01"
+ },
+ {
+  "token": "2026",
+  "kind": "int",
+  "value": "2026"
+ },
+ {
+  "token": "20260131",
+  "kind": "int",
+  "value": "20260131"
+ },
+ {
+  "token": "draft",
+  "kind": "str",
+  "value": "draft"
+ },
+ {
+  "token": "Draft",
+  "kind": "str",
+  "value": "Draft"
+ },
+ {
+  "token": "DRAFT",
+  "kind": "str",
+  "value": "DRAFT"
+ },
+ {
+  "token": "human",
+  "kind": "str",
+  "value": "human"
+ },
+ {
+  "token": "agent",
+  "kind": "str",
+  "value": "agent"
+ },
+ {
+  "token": "import",
+  "kind": "str",
+  "value": "import"
+ },
+ {
+  "token": "null_",
+  "kind": "str",
+  "value": "null_"
+ },
+ {
+  "token": "truthy",
+  "kind": "str",
+  "value": "truthy"
+ },
+ {
+  "token": "noon",
+  "kind": "str",
+  "value": "noon"
+ },
+ {
+  "token": "onward",
+  "kind": "str",
+  "value": "onward"
+ },
+ {
+  "token": "offer",
+  "kind": "str",
+  "value": "offer"
+ },
+ {
+  "token": "yesterday",
+  "kind": "str",
+  "value": "yesterday"
+ },
+ {
+  "token": "-",
+  "kind": "error",
+  "value": ""
+ },
+ {
+  "token": "--",
+  "kind": "str",
+  "value": "--"
+ },
+ {
+  "token": "...",
+  "kind": "str",
+  "value": "..."
+ },
+ {
+  "token": "'",
+  "kind": "error",
+  "value": ""
+ },
+ {
+  "token": "\"",
+  "kind": "error",
+  "value": ""
+ },
+ {
+  "token": "[]",
+  "kind": "json",
+  "value": "[]"
+ },
+ {
+  "token": "{}",
+  "kind": "json",
+  "value": "{}"
+ },
+ {
+  "token": "[a]",
+  "kind": "json",
+  "value": "[\"a\"]"
+ },
+ {
+  "token": "0644",
+  "kind": "int",
+  "value": "420"
+ }
+]
