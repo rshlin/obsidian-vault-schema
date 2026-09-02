@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -12,6 +13,24 @@ import (
 // baseSchemaFilename is the schema every type schema is implicitly merged
 // with, if present.
 const baseSchemaFilename = "_base.schema.json"
+
+// typeNamePattern constrains a discriminator value before it is allowed to
+// become part of a filename. The value arrives from hand-written frontmatter,
+// so without this a note declaring `type: ../../../etc/passwd` would walk
+// straight out of the schemas directory through filepath.Join. No separators,
+// no dots, no traversal, no absolute paths — checked before anything touches
+// the filesystem. Deliberately identical to the in-tree Python validator's
+// TYPE_NAME, so both implementations accept exactly the same names.
+const typeNamePattern = `^[a-z][a-z0-9-]*$`
+
+var typeNameRe = regexp.MustCompile(typeNamePattern)
+
+// ValidTypeName reports whether a discriminator value is usable as a schema
+// filename. It is the containment guard, not a style check: every caller that
+// turns a discriminator into a path must pass it first.
+func ValidTypeName(value string) bool {
+	return typeNameRe.MatchString(value)
+}
 
 // SchemaSet compiles and caches "<type>.schema.json" files from one
 // directory, each merged with baseSchemaFilename via allOf. Not safe for
@@ -30,6 +49,12 @@ func NewSchemaSet(dir string) *SchemaSet {
 // (required — its absence is what "unknown type" means). No $id is needed
 // in either file; AddResource's URL argument is enough for $ref to resolve.
 func (s *SchemaSet) Compile(value string) (*jsonschema.Schema, error) {
+	// Before the cache, before filepath.Join, before any os call: a value that
+	// cannot be a schema name never becomes a path.
+	if !ValidTypeName(value) {
+		return nil, fmt.Errorf("%q is not a usable schema name — it must match %s", value, typeNamePattern)
+	}
+
 	if sch, ok := s.compiled[value]; ok {
 		return sch, nil
 	}

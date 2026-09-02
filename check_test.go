@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -133,7 +135,7 @@ func TestRunVaultCheckExcludeFileSkipsMatchedPathEntirely(t *testing.T) {
 }
 
 func TestRunFilesCheckOverlay(t *testing.T) {
-	report, err := RunFilesCheck("testdata/overlay/*.md", "testdata/overlay/_code-task-overlay.schema.json")
+	report, err := RunFilesCheck("testdata/overlay/*.md", "testdata/overlay/_task-overlay.schema.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,11 +157,70 @@ func TestRunFilesCheckOverlay(t *testing.T) {
 }
 
 func TestRunFilesCheckNoMatches(t *testing.T) {
-	report, err := RunFilesCheck("testdata/overlay/no-such-*.md", "testdata/overlay/_code-task-overlay.schema.json")
+	report, err := RunFilesCheck("testdata/overlay/no-such-*.md", "testdata/overlay/_task-overlay.schema.json")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if report.Checked != 0 || len(report.Errors) != 0 {
 		t.Fatalf("expected an empty, passing report for zero matches, got %+v", report)
+	}
+}
+
+// End-to-end proof of filesystem containment: a note may not reach a schema
+// outside --schemas by writing traversal into its discriminator. The temp
+// layout deliberately puts a *loadable* schema one level above the schemas
+// directory, so a regression here would not merely error differently — it
+// would silently pass.
+func TestRunVaultCheckRefusesTypeThatEscapesSchemasDir(t *testing.T) {
+	root := t.TempDir()
+	vault := filepath.Join(root, "vault")
+	schemas := filepath.Join(root, "schemas")
+	for _, d := range []string{vault, schemas} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write := func(path, content string) {
+		t.Helper()
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	permissive := `{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object"}`
+	write(filepath.Join(schemas, "reference.schema.json"), permissive)
+	// Reachable as "../pwned" from the schemas directory, and nowhere else.
+	write(filepath.Join(root, "pwned.schema.json"), permissive)
+
+	note := func(typeValue string) string {
+		return "---\ntype: " + typeValue + "\ntitle: t\nstatus: draft\nsummary: s\n---\n"
+	}
+	write(filepath.Join(vault, "escape.md"), note("../pwned"))
+	write(filepath.Join(vault, "passwd.md"), note("../../../etc/passwd"))
+	write(filepath.Join(vault, "absolute.md"), note("/etc/passwd"))
+	write(filepath.Join(vault, "good.md"), note("reference"))
+
+	report, err := RunVaultCheck(vault, schemas, "type", "", `\{\{.*?\}\}`, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Checked != 4 {
+		t.Fatalf("expected 4 checked, got %d", report.Checked)
+	}
+	if len(report.Errors) != 3 {
+		t.Fatalf("expected exactly the 3 traversal notes to error, got %d: %+v", len(report.Errors), report.Errors)
+	}
+	for _, f := range report.Errors {
+		if f.Path == "good.md" {
+			t.Fatalf("a well-formed type must still resolve: %s", f.Message)
+		}
+		if !strings.Contains(f.Message, "not a usable schema name") {
+			t.Fatalf("expected %s to be refused by name, got: %s", f.Path, f.Message)
+		}
+		// The message names the offending field, and never a path the value
+		// managed to build.
+		if !strings.HasPrefix(f.Message, `"type: `) {
+			t.Fatalf("expected the message to quote the offending field, got: %s", f.Message)
+		}
 	}
 }

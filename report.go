@@ -5,10 +5,9 @@ import (
 	"os"
 )
 
-// Report collects errors and warnings across a check run, printed in the
-// same "warn"/"FAIL"/"OK" vocabulary as knowledge/scripts/_vault.py's
-// existing Report, so make check's output doesn't change shape depending on
-// which tool emitted a given line.
+// Report collects errors and warnings across a check run, printed in the same
+// "warn"/"FAIL"/"OK" vocabulary a vault's own in-tree check scripts use, so a
+// `make check` line reads the same whichever tool emitted it.
 type Report struct {
 	Title    string
 	Checked  int

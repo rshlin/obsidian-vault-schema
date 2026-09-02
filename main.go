@@ -42,7 +42,7 @@ discriminator field selects):
 Explicit-schema mode (validates a file glob against one schema, for additive
 checks a discriminator can't express):
   --files GLOB              glob of files to validate
-  --schema FILE              schema file to validate them against
+  --schema FILE             schema file to validate them against
 `
 
 func run(args []string) int {

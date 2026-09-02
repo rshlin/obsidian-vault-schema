@@ -71,8 +71,17 @@ func checkOneNote(report *Report, path, rel string, schemas *SchemaSet, discrimi
 	}
 
 	value, _ := fm[discriminator].(string)
+	value = strings.TrimSpace(value)
 	if value == "" {
 		report.Errorf(rel, "missing or non-string %q field", discriminator)
+		return
+	}
+	// The discriminator is hand-written and about to select a file by name.
+	// Reject anything that is not a bare schema name here, where the offending
+	// field can still be named in the message; SchemaSet.Compile refuses the
+	// same values again at the point it builds the path.
+	if !ValidTypeName(value) {
+		report.Errorf(rel, "%q is not a usable schema name — it must match %s", discriminator+": "+value, typeNamePattern)
 		return
 	}
 
@@ -109,9 +118,9 @@ func firstPathComponent(rel string) string {
 }
 
 // RunFilesCheck validates every file matching glob against one explicit
-// schema (no base merge, no discriminator lookup) — how additive checks
-// like the knowledge vault's code-task overlay fields are expressed without
-// this tool knowing what a "code task" is.
+// schema (no base merge, no discriminator lookup) — how a vault expresses an
+// additive check over some subset of its notes that the discriminator cannot
+// name, without this tool having to know what that subset means.
 func RunFilesCheck(glob, schemaPath string) (*Report, error) {
 	paths, err := filepath.Glob(glob)
 	if err != nil {

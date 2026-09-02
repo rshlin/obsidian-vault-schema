@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestSchemaSetCompilesTypeMergedWithBase(t *testing.T) {
 	s := NewSchemaSet("testdata/schemas")
@@ -65,5 +68,48 @@ func TestCompileSchemaFile(t *testing.T) {
 	// No base merge in this mode: "summary" is NOT required here.
 	if err := sch.Validate(map[string]interface{}{"type": "reference"}); err != nil {
 		t.Fatalf("expected no error without base merge, got %v", err)
+	}
+}
+
+// A discriminator value arrives from hand-written frontmatter and is turned
+// into a filename. Every value that is not a bare schema name must be refused
+// by name, before Compile builds a path from it.
+func TestSchemaSetRejectsUnusableTypeNames(t *testing.T) {
+	s := NewSchemaSet("testdata/schemas")
+	for _, bad := range []string{
+		"../../../etc/passwd", // the traversal this guard exists for
+		"..",
+		"../reference",
+		"sub/reference",
+		`..\reference`,
+		"/etc/passwd",
+		"/reference",
+		"reference.schema",
+		".hidden",
+		"Reference",   // uppercase
+		"refer ence",  // whitespace
+		"reference_x", // underscore
+		"-leading",
+		"1leading",
+		"",
+	} {
+		sch, err := s.Compile(bad)
+		if err == nil {
+			t.Fatalf("expected %q to be refused as a schema name, got a compiled schema", bad)
+		}
+		if sch != nil {
+			t.Fatalf("expected no schema alongside the error for %q", bad)
+		}
+		if !strings.Contains(err.Error(), "not a usable schema name") {
+			t.Fatalf("expected %q to be refused by name before any filesystem access, got: %v", bad, err)
+		}
+	}
+}
+
+func TestSchemaSetAcceptsWellFormedTypeNames(t *testing.T) {
+	for _, good := range []string{"reference", "spec", "a", "how-to", "adr-0001", "x9"} {
+		if !ValidTypeName(good) {
+			t.Fatalf("expected %q to be a usable schema name", good)
+		}
 	}
 }

@@ -1,6 +1,6 @@
 ---
 task_id: task-01
 task_status: pending
-spec: linter-buildout
+spec: example-spec
 depends_on: []
 ---

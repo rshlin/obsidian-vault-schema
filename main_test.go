@@ -37,7 +37,7 @@ func TestRunCheckVaultMode(t *testing.T) {
 func TestRunCheckFilesMode(t *testing.T) {
 	code := run([]string{
 		"check", "--files", "testdata/overlay/good-task.md",
-		"--schema", "testdata/overlay/_code-task-overlay.schema.json",
+		"--schema", "testdata/overlay/_task-overlay.schema.json",
 	})
 	if code != 0 {
 		t.Fatalf("expected exit code 0 for the good task fixture alone, got %d", code)
