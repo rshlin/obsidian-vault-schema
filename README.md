@@ -217,7 +217,7 @@ Continuing the vault above — clear out the bad notes, and add a template that 
 plus one that is genuinely missing a required field:
 
 ```sh
-rm -rf rebalance.md shipping.md badtypes && mkdir -p templates
+rm -rf rebalance.md shipping.md tiny badtypes && mkdir -p templates
 
 cat > templates/note.md <<'EOF'
 ---
