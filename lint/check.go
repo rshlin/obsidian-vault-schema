@@ -1,4 +1,22 @@
-package main
+// Package lint validates Markdown notes' YAML frontmatter against JSON Schema
+// — either resolved from a discriminator field or given explicitly.
+//
+// Import it as:
+//
+//	import "github.com/rshlin/obsidian-vault-schema/lint"
+//
+// It lives one directory down rather than at the module root, and the root
+// deliberately holds no Go package at all. `go build -o FILE .` against a root
+// *library* package exits 0 and quietly writes a non-executable ar archive to
+// FILE; pointed at a bindir that is what a downstream installer would leave on
+// PATH in place of the tool, after which `command -v` stops finding it and
+// every guarded "run the linter if it is installed" branch skips in silence.
+// With nothing at the root that command fails loudly instead. Do not move this
+// package up.
+//
+// The command-line front end is package main under cmd/obsidian-vault-lint,
+// which is what gives the installed binary its name. See that directory.
+package lint
 
 import (
 	"fmt"

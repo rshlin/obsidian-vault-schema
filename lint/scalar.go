@@ -1,4 +1,4 @@
-package main
+package lint
 
 // PyYAML-compatible resolution of plain (unquoted) YAML scalars.
 //

@@ -1,3 +1,13 @@
+// Command obsidian-vault-lint is the command-line front end to
+// github.com/rshlin/obsidian-vault-schema.
+//
+// It lives in cmd/obsidian-vault-lint/ for one reason: `go install` names the
+// binary after the directory holding package main, and for a package main at a
+// module root that directory is the module itself. Hoisting this file back to
+// the repository root would install it as "obsidian-vault-schema" — a name no
+// Makefile in this estate invokes, and one whose absence a vault's optional
+// linter pass treats as silence rather than failure. The install would look
+// like it worked and the check would never run. Keep this directory.
 package main
 
 import (
@@ -5,6 +15,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/rshlin/obsidian-vault-schema/lint"
 )
 
 // stringSliceFlag implements flag.Value to collect a repeatable flag (e.g.
@@ -81,7 +93,7 @@ func run(args []string) int {
 			fmt.Fprintln(os.Stderr, "check: --files and --schema are both required together")
 			return 2
 		}
-		report, err := RunFilesCheck(*files, *schemaFile)
+		report, err := lint.RunFilesCheck(*files, *schemaFile)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "check:", err)
 			return 2
@@ -93,7 +105,7 @@ func run(args []string) int {
 			fmt.Fprintln(os.Stderr, "check: --vault and --schemas are both required together")
 			return 2
 		}
-		report, err := RunVaultCheck(*vault, *schemasDir, *discriminator, *relaxedDir, *placeholderPattern, excludeDirs, excludeFiles)
+		report, err := lint.RunVaultCheck(*vault, *schemasDir, *discriminator, *relaxedDir, *placeholderPattern, excludeDirs, excludeFiles)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "check:", err)
 			return 2

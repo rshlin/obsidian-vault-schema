@@ -3,6 +3,10 @@
 `obsidian-vault-lint` validates a Markdown note's YAML frontmatter against a JSON Schema — either
 resolved from a discriminator field (`type:` by default) or given explicitly.
 
+The repository is named `obsidian-vault-schema` and the binary is named `obsidian-vault-lint`.
+That mismatch is deliberate and it is load-bearing — see [Repository layout](#repository-layout)
+before moving any Go file.
+
 It knows nothing about any particular vault's conventions. The schemas, the discriminator field,
 the relaxed directory, the placeholder pattern and both exclude sets are all supplied by the
 caller, so the same binary serves any Obsidian vault that keeps `*.schema.json` files somewhere.
@@ -32,7 +36,7 @@ disagreement is invisible until it bites. So the parity is deliberate and tested
 The drift is almost never in the JSON Schema keywords — it is in **the YAML layer underneath
 them**, because PyYAML implements YAML 1.1 and `gopkg.in/yaml.v3` implements a YAML-1.2-flavoured
 core. Left alone the two disagree about what a bare word means. So plain scalars are resolved here
-the way PyYAML's `SafeLoader` resolves them ([`scalar.go`](scalar.go)), and `testdata/pyyaml_scalars.json`
+the way PyYAML's `SafeLoader` resolves them ([`lint/scalar.go`](lint/scalar.go)), and `lint/testdata/pyyaml_scalars.json`
 records what the vault's own loader produced for a sweep of tokens. `TestPlainScalarsMatchPyYAML`
 replays every one of them: if it fails, the two validators now disagree about a value.
 
@@ -58,7 +62,7 @@ replays every one of them: if it fails, the two validators now disagree about a 
 constructor by *tag*, not by quoting: `!!int "42"` is an integer despite the quotes and `!!str 42`
 is text despite looking numeric. `yaml.v3` also fills in an implicit tag for every scalar from its
 own YAML-1.2 resolution, which must be ignored — only a tag the author actually wrote
-(`yaml.TaggedStyle`) is honoured. `testdata/pyyaml_tags.json` records what the vault's loader built
+(`yaml.TaggedStyle`) is honoured. `lint/testdata/pyyaml_tags.json` records what the vault's loader built
 for each one and `TestTaggedScalarsMatchPyYAML` replays them.
 
 **Frontmatter has to be JSON data.** The schemas are JSON Schema, so a value outside the JSON data
@@ -80,19 +84,67 @@ stays exact in Python. Both are JSON *numbers*, so every keyword reaches the sam
 
 ## Install
 
+Two ways in, and both land the same binary under the same name.
+
+**Without a checkout**, straight from the module proxy:
+
+    GOBIN="$HOME/.local/bin" go install github.com/rshlin/obsidian-vault-schema/cmd/obsidian-vault-lint@latest
+
+The `/cmd/obsidian-vault-lint` suffix is not decoration — it is the whole point of the layout, and
+installing the module root instead is an error. `GOBIN` is not decoration either: without it
+`go install` lands in `$(go env GOPATH)/bin` (`~/go/bin`), which is not on `PATH` on a stock macOS
+account, so the install would report success and the tool would stay invisible.
+
+**From a checkout:**
+
     make install    # -> ~/.local/bin/obsidian-vault-lint
 
-`~/.local/bin` because that is what is on `PATH`; `go install` would put it in
-`$(go env GOPATH)/bin`, which is not. Override either half:
+`~/.local/bin` for the same reason. Override either half:
 
     make install PREFIX=/usr/local     # -> /usr/local/bin/obsidian-vault-lint
     make install BINDIR=/some/dir      # -> /some/dir/obsidian-vault-lint
 
 Other targets: `make build` (into `bin/`), `make test`, `make tidy`, `make clean`.
 
-A vault generated from the knowledge template can install it without coming here at all —
-`make install-lint` in the vault builds this checkout into `~/.local/bin` and tells you whether
-`PATH` actually picked it up.
+Either way, check what you got — the name is the thing that matters:
+
+    which obsidian-vault-lint
+
+A vault generated from the knowledge template can install it without coming here at all, with
+`make install-lint`, which reports whether `PATH` actually picked the binary up. That target
+builds the package it is pointed at, so it wants `./cmd/obsidian-vault-lint` — a vault still
+building `.` predates this layout and needs updating.
+
+## Repository layout
+
+    cmd/obsidian-vault-lint/    package main — the CLI, and the binary's name
+    lint/                       the library: parsing, schema resolution, validation, reporting
+    lint/testdata/              fixtures, shared by both packages' tests
+    <root>                      no Go package, on purpose
+
+Neither of those last two facts is tidiness. Each prevents a specific silent failure, and both
+failures look exactly like a successful install.
+
+**Why `package main` is in `cmd/obsidian-vault-lint/` and not at the root.** `go install` names
+the binary after the directory that holds `package main`. For a `package main` at a module root,
+that directory is the module — so `go install github.com/rshlin/obsidian-vault-schema@latest`
+installs a binary called **`obsidian-vault-schema`**. Nothing invokes that name. Every Makefile in
+this estate calls the tool as bare `obsidian-vault-lint`, and a vault's linter pass is guarded by
+`command -v obsidian-vault-lint` and treats "not installed" as silence rather than failure. So a
+user who followed the documented one-command install would get a green `make check` with the Go
+pass never running once, and no output anywhere saying so. Moving `main.go` back to the root to
+"simplify the layout" reintroduces exactly that, and reintroduces it silently: the build still
+works, the tests still pass, `make install` still produces the right name, and only the
+`go install` path breaks — the one path no test covers.
+
+**Why the root holds no Go package at all.** With a library package at the root,
+`go build -o SOME/PATH .` exits 0 and writes a **non-executable `ar` archive** to `SOME/PATH`
+instead of refusing. Pointed at a bindir — which is precisely what an installer does — that
+replaces the real tool on `PATH` with a 500 KB archive at mode `0644`. `command -v` then stops
+finding it, because it is not executable, and every guarded "run the linter if it is installed"
+branch goes quiet. The install prints success; the check never runs again. With no package at the
+root the same command fails loudly (`no Go files in ...`, exit 1) and leaves the installed binary
+alone. So the library lives in `lint/`; do not hoist it up to keep the import path shorter.
 
 ## CLI
 

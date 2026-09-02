@@ -1,2 +1,5 @@
 /bin/
-/obsidian-vault-schema
+# `go build ./cmd/obsidian-vault-lint` run from the repository root drops the
+# binary here rather than in bin/. There is no /obsidian-vault-schema entry any
+# more: nothing builds a binary by the module's own name, which was the bug.
+/obsidian-vault-lint

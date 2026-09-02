@@ -2,6 +2,12 @@ GO := go
 NAME := obsidian-vault-lint
 BIN := bin/$(NAME)
 
+# The package to build. It is ./cmd/$(NAME) and not "." on purpose: Go names an
+# installed binary after the directory holding `package main`, so the directory
+# name IS the binary name. See cmd/obsidian-vault-lint/main.go for what a move
+# back to the module root would silently install instead.
+CMD := ./cmd/$(NAME)
+
 # Where `make install` puts the binary. ~/.local/bin by default because that is
 # what is on PATH — `go install` would land it in $(GOPATH)/bin (~/go/bin) with
 # GOBIN unset, which is not on PATH, so the tool would be invisible. Override
@@ -13,7 +19,7 @@ BINDIR ?= $(PREFIX)/bin
 
 build:
 	@mkdir -p bin
-	$(GO) build -o $(BIN) .
+	$(GO) build -o $(BIN) $(CMD)
 
 test:
 	$(GO) test ./...
@@ -28,5 +34,5 @@ clean:
 ##           any vault, not just one workspace's direnv.
 install:
 	@mkdir -p $(BINDIR)
-	$(GO) build -o $(BINDIR)/$(NAME) .
+	$(GO) build -o $(BINDIR)/$(NAME) $(CMD)
 	@echo "installed $(BINDIR)/$(NAME)"
