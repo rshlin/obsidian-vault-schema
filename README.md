@@ -9,6 +9,14 @@ about any particular vault's conventions; a vault supplies its own `*.schema.jso
     make build      # -> bin/obsidian-vault-lint
     make test
 
+## Install
+
+    make install    # -> ~/.local/bin/obsidian-vault-lint
+
+`~/.local/bin` because that is what is on PATH; `go install` would put it in
+`$(go env GOPATH)/bin`, which is not. Override with `make install PREFIX=/usr/local`
+or `make install BINDIR=/some/dir`.
+
 ## Usage
 
 Type-driven mode — validate every note under a vault against the schema its `type` (or
